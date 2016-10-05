@@ -6,6 +6,9 @@ This fork does a few things different to the orginal extension:
  - Adding Jmenu item to add URL to Authmatrix with specific role enable
  - If url already exist in the db, add the extra role to the URLs.
 
+![Sample Menu Item](img4.png)
+
+Original README:
 
 # AuthMatrix v0.5.4
 
