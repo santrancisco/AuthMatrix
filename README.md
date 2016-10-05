@@ -1,3 +1,12 @@
+# About this fork:
+
+This fork does a few things different to the orginal extension:
+
+ - Not allowing duplicate URLs
+ - Adding Jmenu item to add URL to Authmatrix with specific role enable
+ - If url already exist in the db, add the extra role to the URLs.
+
+
 # AuthMatrix v0.5.4
 
 AuthMatrix is an extension to Burp Suite that provides a simple way to test authorization in web applications and web services. With AuthMatrix, testers focus on thoroughly defining tables of users, roles, and requests for their specific target application upfront. These tables are displayed through the UI in a similar format to that of an access control matrix commonly built in various threat modeling methodologies.

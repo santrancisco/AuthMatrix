@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Mick Ayzenberg - Security Innovation
+# Copyright (c) 2016 - original author Mick Ayzenberg - Security Innovation, updated by San Tran
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -283,7 +283,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
     ##
     
     def getTabCaption(self):
-        return "AuthMatrix"
+        return "San_modified_AuthMatrix"
     
     def getUiComponent(self):
         return self._splitpane
@@ -295,11 +295,21 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
     def createMenuItems(self, invocation):
 
+        # Adding request 
         def addRequestsToTab(e):
             for messageInfo in messages:
                 # saveBuffers is required since modifying the original from its source changes the saved objects, its not a copy
                 messageIndex = self._db.createNewMessage(self._callbacks.saveBuffersToTempFiles(messageInfo), 
                     self._helpers.analyzeRequest(messageInfo).getUrl())
+                #self._messageTable.getModel().addRow(row)
+            self._messageTable.redrawTable()
+        # Adding request with specific role enabled.
+        def addRequestWithRoleToTab(e):
+            roleid = int(e.getActionCommand().split("_")[-1])
+            for messageInfo in messages:
+                # saveBuffers is required since modifying the original from its source changes the saved objects, its not a copy
+                messageIndex = self._db.createNewMessage(self._callbacks.saveBuffersToTempFiles(messageInfo), 
+                    self._helpers.analyzeRequest(messageInfo).getUrl(),roleid=roleid)
                 #self._messageTable.getModel().addRow(row)
             self._messageTable.redrawTable()
 
@@ -317,6 +327,12 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             menuItem = JMenuItem("Send request(s) to AuthMatrix");
             menuItem.addActionListener(addRequestsToTab)
             ret.append(menuItem)
+            # Update by San to add JMenuItems that allow adding urls to specific roles.
+            for i in self._db.arrayOfRoles:
+                menuItem = JMenuItem("Send request(s) to AuthMatrix_role_%s_id_%s"%(i._name,i._index));
+                menuItem.addActionListener(addRequestWithRoleToTab)
+                ret.append(menuItem)
+            
         return ret
     
     ##
@@ -666,18 +682,33 @@ class MatrixDB():
         return roleIndex
 
     # Returns the Row of the new message
-    # Unlike Users and Roles, allow duplicate messages
-    def createNewMessage(self,messagebuffer,url):
+    # Update to remove duplicate messages and if exist , may add additional roles
+    # Also allow adding role by default.
+    def createNewMessage(self,messagebuffer,url,roleid=None):
+
         self.lock.acquire()
-        messageIndex = self.arrayOfMessages.size()
-        self.arrayOfMessages.add(MessageEntry(messageIndex, messageIndex - self.deletedMessageCount, messagebuffer, url))
-
-        # Add all existing roles as unchecked
-        for roleIndex in self.getActiveRoleIndexes():
-            self.arrayOfMessages[messageIndex].addRoleByIndex(roleIndex)
-
+        messageIndex = -1
+        # Check if Message already exits
+        for i in self.getActiveMessageIndexes():
+            if self.arrayOfMessages[i]._url == url:
+                messageIndex = i
+        # Add new role to existing message
+        if messageIndex > 0:
+            if (roleid != None):
+                self.arrayOfMessages[messageIndex].addRoleByIndex(roleid,enabled=True)
+        # Update message and add role if appropriate
+        else:
+            messageIndex = self.arrayOfMessages.size()
+            self.arrayOfMessages.add(MessageEntry(messageIndex, messageIndex - self.deletedMessageCount, messagebuffer, url))
+            # Add all existing roles as unchecked
+            for roleIndex in self.getActiveRoleIndexes():
+                if (roleIndex == roleid):
+                    self.arrayOfMessages[messageIndex].addRoleByIndex(roleIndex,enabled=True)
+                else:
+                    self.arrayOfMessages[messageIndex].addRoleByIndex(roleIndex)
         self.lock.release()
         return messageIndex
+
 
     def clear(self):
         self.lock.acquire()
